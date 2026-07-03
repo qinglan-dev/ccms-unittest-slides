@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工单模块后端单元测试 —— 教学幻灯片</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  html { font-size: clamp(14px, 2.2vw, 22px); }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+         background: #1a1a2e; color: #e0e0e0; overflow: hidden; height: 100vh; }
+
+  /* ── Slide Viewport ── */
+  #slides { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  .slide { position: absolute; top:0; left:0; width:100%; height:100%;
+           display: flex; flex-direction: column; justify-content: center;
+           padding: 4% 6%; opacity:0; transform:scale(.96);
+           transition: opacity .45s ease, transform .45s ease;
+           pointer-events:none; overflow-y:auto; }
+  .slide.active { opacity:1; transform:scale(1); pointer-events:auto; z-index:1; }
+
+  /* ── Slide Types ── */
+  .slide.title-slide { text-align:center; justify-content:center;
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); }
+  .slide.title-slide h1 { font-size:2.8em; font-weight:800;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .slide.title-slide .subtitle { margin-top:1em; font-size:1.2em; opacity:.8; }
+
+  .slide.section-slide { text-align:center; justify-content:center;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
+  .slide.section-slide h2 { font-size:2em; font-weight:700; color:#667eea; }
+
+  .slide.content-slide { background:#1e1e36; }
+  .slide.content-slide h2 { font-size:1.6em; margin-bottom:.8em; color:#8899ff; }
+  .slide.content-slide h3 { font-size:1.2em; margin:.6em 0 .4em; color:#aabbff; }
+  .slide.content-slide p, .slide.content-slide li { line-height:1.7; margin:.3em 0; }
+  .slide.content-slide ul, .slide.content-slide ol { padding-left:1.5em; }
+  .slide.content-slide ul li, .slide.content-slide ol li { margin:.25em 0; }
+
+  /* ── Code Blocks ── */
+  pre { background:#0d0d1a; border-radius:8px; padding:.8em 1em; margin:.5em 0;
+        overflow-x:auto; font-size:.85em; line-height:1.5; border:1px solid #333; }
+  code { font-family:"JetBrains Mono", "Fira Code", Consolas, monospace;
+         background:#0d0d1a; padding:.15em .4em; border-radius:4px; font-size:.9em; }
+  pre code { background:transparent; padding:0; }
+
+  /* ── Tables ── */
+  table { width:100%; border-collapse:collapse; margin:.6em 0; font-size:.9em; }
+  th, td { border:1px solid #333; padding:.5em .7em; text-align:left; }
+  th { background:#2a2a4a; color:#8899ff; font-weight:600; }
+  tr:nth-child(even) { background:#1a1a32; }
+
+  /* ── Highlights & Quotes ── */
+  blockquote { border-left:4px solid #667eea; background:#1a1a3a; padding:.6em 1em;
+               margin:.5em 0; border-radius:0 8px 8px 0; font-style:italic; }
+  .highlight { color:#ffd866; font-weight:600; }
+  .tag { display:inline-block; background:#667eea22; border:1px solid #667eea;
+         color:#8899ff; padding:.15em .5em; border-radius:4px; font-size:.8em;
+         margin:.2em; }
+  .tag.green { background:#22aa4422; border-color:#22aa44; color:#44dd66; }
+
+  /* ── Navigation ── */
+  #nav { position:fixed; bottom:2rem; left:50%; transform:translateX(-50%);
+         display:flex; gap:.8em; align-items:center; z-index:100;
+         background:#0d0d1acc; backdrop-filter:blur(8px); padding:.6em 1.2em;
+         border-radius:2em; border:1px solid #333; }
+  #nav button { background:#667eea; color:#fff; border:none; border-radius:50%;
+                width:2.2em; height:2.2em; font-size:1em; cursor:pointer;
+                transition:background .2s; display:flex; align-items:center;
+                justify-content:center; }
+  #nav button:hover { background:#5568d0; }
+  #nav button:disabled { opacity:.3; cursor:default; background:#444; }
+  #page-info { font-size:.85em; color:#888; min-width:5ch; text-align:center; }
+
+  /* ── Progress Bar ── */
+  #progress { position:fixed; top:0; left:0; height:3px;
+              background:linear-gradient(90deg, #667eea, #764ba2);
+              transition:width .4s ease; z-index:200; }
+
+  /* ── Responsive ── */
+  @media (max-width:768px) {
+    .slide { padding:3% 5%; }
+    .slide.title-slide h1 { font-size:2em; }
+    .slide.content-slide h2 { font-size:1.3em; }
+    pre { font-size:.75em; }
+  }
+  @media (max-height:600px) {
+    .slide { padding:2% 4%; }
+    .slide.title-slide h1 { font-size:1.8em; }
+    pre { font-size:.7em; }
+  }
+
+  /* ── Timestamp ── */
+  #timestamp { position:fixed; bottom:2rem; right:2rem; font-size:.7em; color:#555; z-index:100; }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="slides">
+
+<!-- ══════════════ SLIDE 1: Title ══════════════ -->
+<div class="slide title-slide active">
+  <h1>工单模块后端单元测试</h1>
+  <p class="subtitle">教师授课幻灯片</p>
+  <p style="margin-top:1.5em; opacity:.6; font-size:.9em;">适用对象：已完成 E2E 链路实训的学生</p>
+  <p style="opacity:.5; font-size:.8em;">课时：90 分钟（45 分钟讲解 + 45 分钟实操）</p>
+  <div style="margin-top:2em; display:flex; gap:1em; justify-content:center; flex-wrap:wrap;">
+    <span class="tag">JUnit 4</span>
+    <span class="tag">Mockito</span>
+    <span class="tag green">Spring Boot</span>
+  </div>
+</div>
+
+<!-- ══════════════ SLIDE 2: 没有测试的代价 ══════════════ -->
+<div class="slide content-slide">
+  <h2>📖 没有测试的代价</h2>
+  <blockquote>上周上线一个维修记录列表的分页修改，改完我测了新增、没测查询。上线后发现查询按钮点了没反应 —— 原来 <code>getAllByPage</code> 的参数顺序改了，Mapper 返回了空数据。回滚花了一小时。</blockquote>
+  <p>如果有这个测试 👇 只要 3 秒就能发现问题：</p>
+  <pre><code>@Test
+public void getAllWorkOrders_shouldReturnList() {
+    when(mapper.getAll(any())).thenReturn(mockList);
+    Result result = service.getAllWorkOrders(null);
+    assertNotNull(result.getData());
+}</code></pre>
+  <p style="margin-top:1em;"><span class="highlight">测试是防护网</span> —— 以后重构代码时，有测试罩着才敢改。</p>
+</div>
+
+<!-- ══════════════ SLIDE 3: 课程定位 ══════════════ -->
+<div class="slide content-slide">
+  <h2>📌 课程定位 & 学生画像</h2>
+  <table>
+    <tr><th>项目</th><th>内容</th></tr>
+    <tr><td>课程名称</td><td>工单模块后端单元测试入门</td></tr>
+    <tr><td>课程定位</td><td>E2E 链路实训的"第二轮作业"配套理论课</td></tr>
+    <tr><td>学生基础</td><td>✅ 已完成 80 分钟 E2E 实操<br>✅ 已理解三层架构<br>❌ 未接触单元测试<br>❌ 不理解 Mock</td></tr>
+    <tr><td>授课形式</td><td>讲解 + 板书 + 投屏演示 + 实操</td></tr>
+  </table>
+  <div style="display:flex; justify-content:center; margin-top:.8em;">
+    <pre style="width:auto; text-align:center; font-size:.9em;">
+实训第一天：E2E 链路搭建  →  学生有了"骨架"
+实训第二天：单元测试入门  ←  📍本课
+实训第三天：第二轮迭代     →  测试跟着长</pre>
+  </div>
+</div>
+
+<!-- ══════════════ SLIDE 4: 本课不讲什么 ══════════════ -->
+<div class="slide content-slide">
+  <h2>🚫 本课不讲什么</h2>
+  <p style="margin-bottom:.6em;">以下内容<strong style="color:#ff6b6b;">明确不讲</strong>，首次课讲太多会冲淡核心目标：</p>
+  <table>
+    <tr><th>不讲内容</th><th>原因</th></tr>
+    <tr><td><code>@SpringBootTest</code></td><td>需完整上下文，加载慢</td></tr>
+    <tr><td><code>@WebMvcTest</code></td><td>需 JSON 序列化知识</td></tr>
+    <tr><td>JaCoCo 覆盖率</td><td>工具配置 > 教学价值</td></tr>
+    <tr><td>TDD</td><td>思维转换需要时间</td></tr>
+    <tr><td>参数化测试</td><td>JUnit 4 下语法较繁琐</td></tr>
+    <tr><td>前端单元测试</td><td>项目无测试基建</td></tr>
+  </table>
+</div>
+
+<!-- ══════════════ SLIDE 5: 教学目标 ══════════════ -->
+<div class="slide content-slide">
+  <h2>🎯 教学目标</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1em; margin-top:.5em;">
+    <div style="background:#1a1a3a; border-radius:8px; padding:.8em; border-top:3px solid #667eea;">
+      <h3 style="margin-top:0;">📖 知识目标</h3>
+      <ul style="font-size:.9em;">
+        <li>单元测试是"隔离"验证</li>
+        <li>Mock 的本质是"假对象"</li>
+        <li>Service 层是测试核心</li>
+      </ul>
+    </div>
+    <div style="background:#1a1a3a; border-radius:8px; padding:.8em; border-top:3px solid #22aa44;">
+      <h3 style="margin-top:0;">🔧 技能目标</h3>
+      <ul style="font-size:.9em;">
+        <li>新建测试类</li>
+        <li>写 @Test / @Mock / @InjectMocks</li>
+        <li>写断言 + 运行 mvn test</li>
+      </ul>
+    </div>
+    <div style="background:#1a1a3a; border-radius:8px; padding:.8em; border-top:3px solid #ffd866;">
+      <h3 style="margin-top:0;">💡 思维目标</h3>
+      <ul style="font-size:.9em;">
+        <li>测试即文档</li>
+        <li>测试是防护网</li>
+        <li>测试要可进化</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SLIDE 6: 教学流程 ══════════════ -->
+<div class="slide content-slide">
+  <h2>📋 教学流程总览</h2>
+  <table>
+    <tr><th>时段</th><th>环节</th><th>时长</th></tr>
+    <tr><td rowspan="6">第一课时<br>理论</td><td>1. 引子：没有测试的代价</td><td>5 分钟</td></tr>
+    <tr><td>2. 核心概念：单元测试 & Mock</td><td>10 分钟</td></tr>
+    <tr><td>3. 拆解被测代码</td><td>5 分钟</td></tr>
+    <tr><td>4. 教师演示：从零写完一个测试</td><td>15 分钟</td></tr>
+    <tr><td>5. Controller 测试</td><td>5 分钟</td></tr>
+    <tr><td>6. 操作指引 + 布置任务</td><td>5 分钟</td></tr>
+    <tr><td rowspan="3">第二课时<br>实操</td><td>7. 学生实操 + 教师巡场</td><td>30 分钟</td></tr>
+    <tr><td>8. 常见问题集中答疑</td><td>10 分钟</td></tr>
+    <tr><td>9. 总结 + 预告 + 作业</td><td>5 分钟</td></tr>
+  </table>
+</div>
+
+<!-- ══════════════ SLIDE 7: 核心概念 ══════════════ -->
+<div class="slide content-slide">
+  <h2>🧩 核心概念：单元测试 & Mock</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1em;">
+    <div style="background:#0d0d1a; border-radius:8px; padding:.8em; border:1px solid #333;">
+      <pre style="border:none; background:transparent; font-size:.85em;">
+┌─────────────────────────┐
+│   你要测的代码            │
+│   addWorkOrder()         │
+│                          │
+│   1. UUID 生成           │
+│   2. Date now            │
+│   3. deleteSign = 0      │
+│   4. status = "0"        │
+│   5. workOrderMapper     │
+│      .insert()  ← 依赖   │
+└─────────────────────────┘</pre>
+    </div>
+    <div style="background:#0d0d1a; border-radius:8px; padding:.8em; border:1px solid #333;">
+      <pre style="border:none; background:transparent; font-size:.85em;">
+单元测试 = 不启动数据库、
+         不启动服务器的情况下，
+         验证代码逻辑是否正确。
+
+真实数据库  ←→  真的开车上路
+Mock Mapper ←→  驾校模拟驾驶器</pre>
+    </div>
+  </div>
+  <h3 style="margin-top:.5em;">三个注解的口诀</h3>
+  <div style="display:flex; gap:.8em; justify-content:center; flex-wrap:wrap;">
+    <span style="background:#667eea22; padding:.4em .8em; border-radius:6px; border:1px solid #667eea;"><code style="background:transparent;">@Mock</code> → "做个假的"</span>
+    <span style="background:#22aa4422; padding:.4em .8em; border-radius:6px; border:1px solid #22aa44;"><code style="background:transparent;">@InjectMocks</code> → "装上去"</span>
+    <span style="background:#ffd86622; padding:.4em .8em; border-radius:6px; border:1px solid #ffd866;"><code style="background:transparent;">@Captor</code> → "接住"</span>
+  </div>
+  <p style="margin-top:.8em; text-align:center; font-size:1.1em; color:#ffd866;">口诀：先调用 → 再捕获 → 后断言</p>
+</div>
+
+<!-- ══════════════ SLIDE 8: addWorkOrder 7 步 ══════════════ -->
+<div class="slide content-slide">
+  <h2>🔍 被测代码：addWorkOrder 7 步</h2>
+  <p>学生手写的 <code>addWorkOrder</code> 方法：</p>
+  <pre><code>public Result addWorkOrder(CcmsSmartleasingWorkOrder workOrder, String token) {
+    // 1. UUID 主键
+    workOrder.setPkWorkOrderId(UUID.randomUUID().toString());
+    // 2-3. 审计时间
+    Date now = new Date();
+    workOrder.setCreationDate(now);
+    workOrder.setLastUpdateDate(now);
+    // 4. 软删除标记
+    workOrder.setDeleteSign((byte) 0);
+    // 5. 状态默认 "0=待处理"
+    workOrder.setWorkOrderStatus("0");
+    // 6. 默认 createdBy / lastUpdatedBy = 0
+    if (workOrder.getCreatedBy() == null) workOrder.setCreatedBy(0);
+    if (workOrder.getLastUpdatedBy() == null) workOrder.setLastUpdatedBy(0);
+    // 7. 调用 Mapper
+    workOrderMapper.insert(workOrder);
+    return Result.success();
+}</code></pre>
+  <p style="margin-top:.3em;"><span class="highlight">7 步就是 7 条业务规则</span>，每条都要写断言来确认。</p>
+</div>
+
+<!-- ══════════════ SLIDE 9: 演示 - 测试目录结构 ══════════════ -->
+<div class="slide content-slide">
+  <h2>💻 演示：新建测试类</h2>
+  <p>定位到测试目录：</p>
+  <pre><code>ccms-smartleasing-impl/src/test/java/com/smartleasing/microservice/
+                                                      └── WorkOrderServiceImplTest.java</code></pre>
+  <p>类签名与注解：</p>
+  <pre><code>@RunWith(MockitoJUnitRunner.Silent.class)
+public class WorkOrderServiceImplTest {
+
+    @Mock
+    private CcmsSmartleasingWorkOrderMapper workOrderMapper;
+
+    @InjectMocks
+    private WorkOrderServiceImpl workOrderService;
+
+    @Captor
+    private ArgumentCaptor&lt;CcmsSmartleasingWorkOrder&gt; workOrderCaptor;
+}</code></pre>
+  <ul style="font-size:.9em;">
+    <li><code>@Mock</code> → 创建假的 Mapper</li>
+    <li><code>@InjectMocks</code> → 把假的装进 ServiceImpl</li>
+    <li><code>@Captor</code> → 准备盒子接住 insert 的参数</li>
+  </ul>
+</div>
+
+<!-- ══════════════ SLIDE 10: 第一个测试方法 ══════════════ -->
+<div class="slide content-slide">
+  <h2>✍️ 第一个测试方法（完整）</h2>
+  <pre><code>@Test
+public void addWorkOrder_shouldSetAllRequiredFields_whenRequestValid() {
+    // ── 准备（3A：Arrange）──
+    CcmsSmartleasingWorkOrder request = new CcmsSmartleasingWorkOrder();
+    request.setWorkOrderContent("水龙头漏水");
+    request.setSubmitter("张三");
+    request.setSubmitterContactInformation("13800000000");
+    request.setFkWorkOrderTypeId("001");
+
+    // ── 执行（3A：Act）──
+    Result result = workOrderService.addWorkOrder(request, null);
+
+    // ── 验证（3A：Assert）──
+    // 验证 1：返回值
+    assertEquals("code 应为 10000", 10000, result.getCode());
+
+    // 验证 2：verify insert 被调用
+    verify(workOrderMapper, times(1)).insert(workOrderCaptor.capture());
+    CcmsSmartleasingWorkOrder captured = workOrderCaptor.getValue();
+
+    // 验证 3：逐字段断言 7 步
+    assertNotNull("主键不能为空", captured.getPkWorkOrderId());
+    assertNotNull("creationDate 必须设置", captured.getCreationDate());
+    assertEquals("deleteSign 应为 0", Byte.valueOf((byte)0), captured.getDeleteSign());
+    assertEquals("workOrderStatus 应为 '0'", "0", captured.getWorkOrderStatus());
+    assertEquals("createdBy 默认应为 0", Integer.valueOf(0), captured.getCreatedBy());
+
+    // 验证 4：业务字段不丢
+    assertEquals("工单内容要保留", "水龙头漏水", captured.getWorkOrderContent());
+}</code></pre>
+</div>
+
+<!-- ══════════════ SLIDE 11: ArgumentCaptor 图解 ══════════════ -->
+<div class="slide content-slide">
+  <h2>🧪 ArgumentCaptor 图解</h2>
+  <div style="display:flex; align-items:center; justify-content:center; gap:1em; margin:.5em 0;">
+    <div style="background:#0d0d1a; border-radius:8px; padding:.8em; border:1px solid #333; flex:1;">
+      <pre style="border:none; background:transparent; font-size:.8em;">
+request (前端传来的)
+├─ content: "水龙头漏水"
+├─ submitter: "张三"
+└─ pkWorkOrderId: null
+
+        ↓ addWorkOrder(request, null)
+
+ServiceImpl 内部做了 7 步修改：
+1. 设 UUID → pkWorkOrderId
+2. 设 Date → creationDate
+3. 设 Date → lastUpdateDate
+4. 设 (byte)0 → deleteSign
+5. 设 "0"  → workOrderStatus
+...
+
+        ↓ insert(workOrder)
+
+captured = captor.getValue()
+├─ pkWorkOrderId: "uuid-xxx"  ✅
+├─ creationDate: 2026-07-03   ✅
+├─ deleteSign: 0              ✅
+└─ content: "水龙头漏水"       ✅ 业务字段没丢</pre>
+    </div>
+  </div>
+  <p style="text-align:center;"><span class="highlight">关键是：不能用原始 request 做断言</span> —— 它还没被修改过。</p>
+</div>
+
+<!-- ══════════════ SLIDE 12: 剩余 3 个测试 ══════════════ -->
+<div class="slide content-slide">
+  <h2>📋 剩余 3 个测试方法</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:.6em;">
+    <pre style="font-size:.72em;"><code>// 测试 2：默认值兜底
+@Test
+public void addWorkOrder_shouldOverrideNullCreatedBy_withDefaultZero() {
+    CcmsSmartleasingWorkOrder request =
+        new CcmsSmartleasingWorkOrder();
+    workOrderService.addWorkOrder(request, null);
+    verify(workOrderMapper).insert(workOrderCaptor.capture());
+    assertEquals(Integer.valueOf(0),
+        workOrderCaptor.getValue().getCreatedBy());
+    assertEquals(Integer.valueOf(0),
+        workOrderCaptor.getValue().getLastUpdatedBy());
+}</code></pre>
+    <pre style="font-size:.72em;"><code>// 测试 3：自定义值保留
+@Test
+public void addWorkOrder_shouldPreserveExplicitCreatedBy_whenProvided() {
+    CcmsSmartleasingWorkOrder request =
+        new CcmsSmartleasingWorkOrder();
+    request.setCreatedBy(42);
+    workOrderService.addWorkOrder(request, null);
+    verify(workOrderMapper).insert(workOrderCaptor.capture());
+    assertEquals(Integer.valueOf(42),
+        workOrderCaptor.getValue().getCreatedBy());
+}
+
+// 测试 4：UUID 唯一性
+@Test
+public void addWorkOrder_shouldGenerateDifferentIdOnEachCall() {
+    CcmsSmartleasingWorkOrder first = new CcmsSmartleasingWorkOrder();
+    workOrderService.addWorkOrder(first, null);
+    CcmsSmartleasingWorkOrder second = new CcmsSmartleasingWorkOrder();
+    workOrderService.addWorkOrder(second, null);
+    assertFalse("每次应生成不同主键",
+        first.getPkWorkOrderId().equals(second.getPkWorkOrderId()));
+}</code></pre>
+  </div>
+  <p style="margin-top:.3em;">4 个测试，分别验证：<span class="tag">成功场景</span><span class="tag">默认值兜底</span><span class="tag">自定义值保留</span><span class="tag">幂等性</span></p>
+</div>
+
+<!-- ══════════════ SLIDE 13: Controller 测试 ══════════════ -->
+<div class="slide content-slide">
+  <h2>🎮 Controller 测试</h2>
+  <blockquote>Controller 不做业务逻辑，只负责"把请求转给 Service，把结果返回给前端"。</blockquote>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:.6em; margin-top:.5em;">
+    <div>
+      <pre style="font-size:.75em;"><code>@RunWith(MockitoJUnitRunner.class)
+public class WorkOrderControllerTest {
+
+    @Mock
+    private WorkOrderService workOrderService;
+
+    @InjectMocks
+    private WorkOrderController workOrderController;
+
+    @Test
+    public void addWorkOrder_shouldDelegateToService() {
+        CcmsSmartleasingWorkOrder request =
+            new CcmsSmartleasingWorkOrder();
+        when(workOrderService.addWorkOrder(request, null))
+            .thenReturn(Result.success());
+
+        Result result = workOrderController
+            .addWorkOrder(request, null);
+
+        assertEquals(10000, result.getCode());
+        verify(workOrderService)
+            .addWorkOrder(request, null);
+    }
+}</code></pre>
+    </div>
+    <div>
+      <table style="font-size:.8em;">
+        <tr><th>Service 测试</th><th>Controller 测试</th></tr>
+        <tr><td>Mock Mapper</td><td>Mock Service</td></tr>
+        <tr><td>验证 insert 参数</td><td>验证方法被调用</td></tr>
+        <tr><td>7 个断言</td><td>2 个断言</td></tr>
+      </table>
+      <p style="margin-top:.5em;">Controller 测试比 Service 测试<span class="highlight">简单得多</span> —— 因为业务逻辑不在 Controller 里。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SLIDE 14: 运行命令 ══════════════ -->
+<div class="slide content-slide">
+  <h2>⚡ 运行测试</h2>
+  <pre><code># 跑所有测试
+mvn test
+
+# 只跑工单测试（更快）
+mvn test -pl ccms-smartleasing-impl \
+  -Dtest=WorkOrderServiceImplTest,WorkOrderControllerTest
+
+# 跳过测试编译
+mvn clean compile -Dmaven.test.skip=true</code></pre>
+  <h3>学生任务清单</h3>
+  <ol style="font-size:.9em;">
+    <li>✅ 新建 <code>WorkOrderServiceImplTest.java</code></li>
+    <li>✅ 写 4 个测试方法</li>
+    <li>✅ 新建 <code>WorkOrderControllerTest.java</code></li>
+    <li>✅ 写 1 个测试方法</li>
+    <li>✅ <code>mvn test</code> 确认全部通过（绿色 BUILD SUCCESS）</li>
+    <li>✅ <span class="highlight">故意改一个断言</span>，看报错红色，再改回来</li>
+  </ol>
+</div>
+
+<!-- ══════════════ SLIDE 15: 读懂报错 ══════════════ -->
+<div class="slide content-slide">
+  <h2>🔴 读懂报错 —— 测试的价值在红色时</h2>
+  <p>故意改断言，投屏展示红色报错：</p>
+  <pre><code>java.lang.AssertionError: code 预期失败
+Expected: 9999
+Actual: 10000</code></pre>
+  <p><span class="highlight">读报错三要素：</span></p>
+  <ol>
+    <li><strong>Expected</strong> —— 你期望的值（9999）</li>
+    <li><strong>Actual</strong> —— 实际值（10000）</li>
+    <li><strong>哪个文件哪一行</strong> —— 定位到出错的断言</li>
+  </ol>
+  <blockquote>"第 6 步很重要 —— '看得懂红色'才算学会了。"</blockquote>
+</div>
+
+<!-- ══════════════ SLIDE 16: 实操巡场策略 ══════════════ -->
+<div class="slide content-slide">
+  <h2>👨‍🏫 实操巡场策略</h2>
+  <table>
+    <tr><th>时间</th><th>学生做什么</th><th>教师做什么</th></tr>
+    <tr><td>0-5 分钟</td><td>创建文件</td><td>检查目录是否正确</td></tr>
+    <tr><td>5-15 分钟</td><td>编写代码</td><td>检查 import、注解</td></tr>
+    <tr><td>15-25 分钟</td><td>运行调试</td><td>先让学生自己看报错</td></tr>
+    <tr><td>25-30 分钟</td><td>收尾</td><td>让完成的学生做"故意改断言"</td></tr>
+  </table>
+  <h3>高频问题即时解答</h3>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:.3em; font-size:.85em;">
+    <div style="background:#1a1a3a; padding:.4em .6em; border-radius:4px;"><code>@Mock</code> 红色 → 检查包名 <code>org.mockito.Mock</code></div>
+    <div style="background:#1a1a3a; padding:.4em .6em; border-radius:4px;"><code>verify</code> 报红 → import <code>org.mockito.Mockito.*</code></div>
+    <div style="background:#1a1a3a; padding:.4em .6em; border-radius:4px;">ArgumentCaptor 报错 → 要写泛型</div>
+    <div style="background:#1a1a3a; padding:.4em .6em; border-radius:4px;">跑出来 0 个 test → 类名是否以 Test 结尾</div>
+  </div>
+</div>
+
+<!-- ══════════════ SLIDE 17: 常见报错 ══════════════ -->
+<div class="slide content-slide">
+  <h2>⚠️ 常见报错 & 排查</h2>
+  <div style="background:#1a1a3a; border-radius:8px; padding:.6em; margin:.3em 0; border-left:3px solid #ff6b6b;">
+    <p><strong>No tests found</strong></p>
+    <p style="font-size:.85em;">原因：测试类名不是 *Test.java，或放错了目录</p>
+    <pre style="font-size:.75em;">WorkOrderServiceImplTest.java  ✅
+WorkOrderTestServiceImpl.java  ❌
+WorkOrderServiceImplTestCases.java  ❌</pre>
+  </div>
+  <div style="background:#1a1a3a; border-radius:8px; padding:.6em; margin:.3em 0; border-left:3px solid #ffd866;">
+    <p><strong>Wanted but not invoked</strong></p>
+    <pre style="font-size:.75em;">Wanted but not invoked:
+workOrderMapper.insert(...);
+Actually, there were zero interactions with this mock.</pre>
+    <p style="font-size:.85em;">说明 ServiceImpl 里没有调 <code>workOrderMapper.insert()</code>。</p>
+  </div>
+  <div style="background:#1a1a3a; border-radius:8px; padding:.6em; margin:.3em 0; border-left:3px solid #22aa44;">
+    <p><strong>Expected vs got</strong></p>
+    <pre style="font-size:.75em;">Expected: is "0"
+     got: null</pre>
+    <p style="font-size:.85em;">expected '0' 但 got null → <code>setWorkOrderStatus("0")</code> 没执行。</p>
+  </div>
+</div>
+
+<!-- ══════════════ SLIDE 18: 作业与评估 ══════════════ -->
+<div class="slide content-slide">
+  <h2>📝 作业与评估标准</h2>
+  <table>
+    <tr><th>维度</th><th>分值</th><th>标准</th></tr>
+    <tr><td>编译</td><td>20 分</td><td>测试文件无编译错误</td></tr>
+    <tr><td>运行</td><td>20 分</td><td><code>mvn test</code> BUILD SUCCESS</td></tr>
+    <tr><td>覆盖率</td><td>30 分</td><td>addWorkOrder 7 步各至少一个断言</td></tr>
+    <tr><td>Controller</td><td>15 分</td><td>包含 verify 验证委托</td></tr>
+    <tr><td>理解</td><td>15 分</td><td>能回答"为什么用 @Mock" 和 "@Captor 的作用"</td></tr>
+  </table>
+  <h3>✨ 加分项</h3>
+  <ul style="font-size:.9em;">
+    <li>给 <code>getAllWorkOrders</code> 写了测试（+10 分）</li>
+    <li>故意制造测试失败，截图标注原因（+5 分）</li>
+    <li>阅读 <code>TenantManagementServiceImplTest</code> 并指出可学模式（+5 分）</li>
+  </ul>
+</div>
+
+<!-- ══════════════ SLIDE 19: 板书设计 ══════════════ -->
+<div class="slide content-slide">
+  <h2>📐 板书设计</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:.6em;">
+    <div style="background:#0d0d1a; border-radius:8px; padding:.6em; border:1px solid #333;">
+      <pre style="border:none; background:transparent; font-size:.78em;">
+┌───────────────────────────────────┐
+│  单元测试 ≠ 集成测试               │
+│                                   │
+│  单元测试：不启动服务器、不连数据库  │
+│            只测自己的业务逻辑       │
+│                                   │
+│  @Mock       "做个假的"            │
+│  @InjectMocks "装上去"             │
+│  @Captor     "接住"                │
+│                                   │
+│  口诀：先调用、再捕获、后断言        │
+└───────────────────────────────────┘</pre>
+    </div>
+    <div style="background:#0d0d1a; border-radius:8px; padding:.6em; border:1px solid #333;">
+      <pre style="border:none; background:transparent; font-size:.78em;">
+┌───────────────────────────────────┐
+│  Service 测试结构：                 │
+│                                   │
+│  @Test                            │
+│  void shouldXxx_whenYyy() {       │
+│    // 1. 准备（Arrange）           │
+│    // 2. 执行（Act）               │
+│    // 3. 验证（Assert）            │
+│  }                                │
+│                                   │
+│  Controller 测试更简单：            │
+│  @Mock Service → verify 被调用    │
+└───────────────────────────────────┘</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SLIDE 20: 总结 ══════════════ -->
+<div class="slide content-slide">
+  <h2>🎬 总结</h2>
+  <div style="display:flex; flex-direction:column; gap:1em; margin-top:1em;">
+    <div style="background:#1a1a3a; border-radius:12px; padding:1em; border-left:4px solid #667eea;">
+      <h3 style="margin:0;">1️⃣ 单元测试不是黑魔法</h3>
+      <p style="margin:.3em 0 0;">它就是写几个 <code>assert</code> 验证你的代码。</p>
+    </div>
+    <div style="background:#1a1a3a; border-radius:12px; padding:1em; border-left:4px solid #22aa44;">
+      <h3 style="margin:0;">2️⃣ Mock 是隔离术</h3>
+      <p style="margin:.3em 0 0;">用假的替代真的，让测试只测你的代码。</p>
+    </div>
+    <div style="background:#1a1a3a; border-radius:12px; padding:1em; border-left:4px solid #ffd866;">
+      <h3 style="margin:0;">3️⃣ 测试要可进化</h3>
+      <p style="margin:.3em 0 0;">以后加功能时，测试跟着加，不是交完作业就丢。</p>
+    </div>
+  </div>
+  <h3 style="margin-top:1em;">预告下一课</h3>
+  <ul>
+    <li>加 Redis 依赖，测试只需加一行 <code>@Mock</code></li>
+    <li>给 <code>getAllWorkOrders</code> 写测试</li>
+    <li><code>@SpringBootTest</code> —— 真的启动 Spring 容器</li>
+  </ul>
+</div>
+
+<!-- ══════════════ SLIDE 21: 板书 - Mock 类比图 ══════════════ -->
+<div class="slide content-slide">
+  <h2>🧠 Mock 类比图</h2>
+  <div style="display:flex; justify-content:center; gap:2em; align-items:center; margin:1em 0;">
+    <div style="text-align:center; background:#1a1a3a; border-radius:12px; padding:1em; flex:1;">
+      <div style="font-size:3em; margin-bottom:.3em;">🚗</div>
+      <h3>真实数据库</h3>
+      <p style="font-size:.85em;">真的开车上路<br>需要油、路况、驾照</p>
+    </div>
+    <div style="font-size:2em; color:#667eea;">→</div>
+    <div style="text-align:center; background:#1a1a3a; border-radius:12px; padding:1em; flex:1;">
+      <div style="font-size:3em; margin-bottom:.3em;">🎮</div>
+      <h3>Mock Mapper</h3>
+      <p style="font-size:.85em;">驾校模拟驾驶器<br>你转方向盘，模拟器会记录</p>
+    </div>
+  </div>
+  <p style="text-align:center;">你转方向盘，模拟器会记录"你转了方向盘"—— 这就是 <code>verify("你确实调用了 insert")</code>。</p>
+</div>
+
+<!-- ══════════════ SLIDE 22: 教师准备清单 ══════════════ -->
+<div class="slide content-slide">
+  <h2>✅ 教师课前准备清单</h2>
+  <table>
+    <tr><th>项目</th><th>说明</th></tr>
+    <tr><td>IDEA 打开后端项目</td><td>确认 test 目录存在且有 Content 文件</td></tr>
+    <tr><td>确认 Maven 可用</td><td>终端跑 <code>mvn --version</code></td></tr>
+    <tr><td>参考实现</td><td>如果学生没写完，准备参考代码</td></tr>
+    <tr><td>故意失败的测试</td><td>演示红色报错时用</td></tr>
+    <tr><td>投屏字体</td><td>IDEA 代码字体至少 20px</td></tr>
+    <tr><td>学生手册</td><td>打印 20 份或确定电子版下发方式</td></tr>
+  </table>
+  <h3 style="margin-top:.5em;">学生需要已完成的</h3>
+  <ul style="font-size:.9em;">
+    <li>✅ <code>WorkOrderServiceImpl.java</code> 已手写且能编译</li>
+    <li>✅ 理解 Spring Boot 三层架构</li>
+    <li>✅ IDEA 已安装、Maven 可运行</li>
+    <li>✅ 80 分钟 E2E 流程至少跑通过 1 次</li>
+  </ul>
+</div>
+
+<!-- ══════════════ SLIDE 23: 教师参考代码 ══════════════ -->
+<div class="slide content-slide">
+  <h2>📄 教师参考：WorkOrderServiceImpl</h2>
+  <p>如果学生 80 分钟 E2E 没写完，可提供此参考实现：</p>
+  <pre><code>@Slf4j
+@Service
+public class WorkOrderServiceImpl implements WorkOrderService {
+
+    @Autowired
+    private CcmsSmartleasingWorkOrderMapper workOrderMapper;
+
+    @Override
+    public Result addWorkOrder(CcmsSmartleasingWorkOrder workOrder, String token) {
+        workOrder.setPkWorkOrderId(UUID.randomUUID().toString());
+        Date now = new Date();
+        workOrder.setCreationDate(now);
+        workOrder.setLastUpdateDate(now);
+        workOrder.setDeleteSign((byte) 0);
+        workOrder.setWorkOrderStatus("0");
+        if (workOrder.getCreatedBy() == null) workOrder.setCreatedBy(0);
+        if (workOrder.getLastUpdatedBy() == null) workOrder.setLastUpdatedBy(0);
+        workOrderMapper.insert(workOrder);
+        return Result.success();
+    }
+}</code></pre>
+</div>
+
+<!-- ══════════════ SLIDE 24: End ══════════════ -->
+<div class="slide title-slide">
+  <h1>感谢聆听 🙏</h1>
+  <p class="subtitle">工单模块后端单元测试入门</p>
+  <p style="margin-top:2em; opacity:.6;">🎯 测试是防护网 —— 有测试罩着才敢改</p>
+  <div style="margin-top:1em;">
+    <p style="font-size:.8em; opacity:.5;">备课日期：2026-06-23 | 课时：90 分钟</p>
+  </div>
+</div>
+
+</div>
+
+<!-- ── Navigation ── -->
+<div id="nav">
+  <button id="prevBtn" onclick="prevSlide()">◀</button>
+  <span id="page-info">1 / 24</span>
+  <button id="nextBtn" onclick="nextSlide()">▶</button>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+let current = 0;
+
+function showSlide(idx) {
+  if (idx < 0) idx = 0;
+  if (idx >= slides.length) idx = slides.length - 1;
+  slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+  document.getElementById('page-info').textContent = (idx + 1) + ' / ' + slides.length;
+  document.getElementById('progress').style.width = ((idx + 1) / slides.length * 100) + '%';
+  document.getElementById('prevBtn').disabled = idx === 0;
+  document.getElementById('nextBtn').disabled = idx === slides.length - 1;
+  current = idx;
+}
+
+function nextSlide() { showSlide(current + 1); }
+function prevSlide() { showSlide(current - 1); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+    e.preventDefault(); nextSlide();
+  }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault(); prevSlide();
+  }
+  if (e.key === 'Home') { e.preventDefault(); showSlide(0); }
+  if (e.key === 'End') { e.preventDefault(); showSlide(slides.length - 1); }
+});
+
+// Touch / swipe
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+document.addEventListener('touchend', e => {
+  const diff = touchStartX - e.changedTouches[0].screenX;
+  if (Math.abs(diff) > 50) { diff > 0 ? nextSlide() : prevSlide(); }
+});
+
+showSlide(0);
+</script>
+
+</body>
+</html>
