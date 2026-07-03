@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>工单模块单元测试 — 实战指南</title>
+<style>
+body { margin: 0; padding: 0; overflow: hidden; }
+#frame { width: 100vw; height: 100vh; border: none; }
+#loading { display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; color: #6b7280; font-size: 18px; }
+</style>
+</head>
+<body>
+<div id="loading">加载中... Loading...</div>
+<script>
+// Fetch the real HTML content (stored as .txt to bypass COS force-download)
+fetch('workorder-unittest-teaching.txt')
+  .then(r => r.text())
+  .then(html => {
+    document.open();
+    document.write(html);
+    document.close();
+  })
+  .catch(err => {
+    document.getElementById('loading').textContent = '加载失败: ' + err.message;
+  });
+</script>
+</body>
+</html>

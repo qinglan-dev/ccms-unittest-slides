@@ -1128,6 +1128,6 @@
     window.addEventListener('hashchange', fromHash);
     fromHash();
     go(idx);
-    enterScrollMode();
+    // enterScrollMode(); // disabled: default to single-slide presentation mode
   });
 })();
