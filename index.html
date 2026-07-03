@@ -762,5 +762,30 @@ assertFalse(condition);</code></pre>
 
 </div>
 <script src="./_shared/runtime.js"></script>
+<script>
+// Replay CSS animations when a slide becomes active
+(function() {
+  function replayAnimations(slide) {
+    var els = slide.querySelectorAll('.line, .gwt-step, .gwt-arr, .terminal .cursor');
+    els.forEach(function(el) {
+      el.style.animation = 'none';
+      void el.offsetWidth; // force reflow
+      el.style.animation = '';
+    });
+  }
+
+  // Watch all slides for is-active class changes
+  var slides = document.querySelectorAll('.slide');
+  var observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      if (m.attributeName === 'class' && m.target.classList.contains('is-active')) {
+        // Small delay to ensure class is fully applied
+        setTimeout(function() { replayAnimations(m.target); }, 50);
+      }
+    });
+  });
+  slides.forEach(function(s) { observer.observe(s, { attributes: true, attributeFilter: ['class'] }); });
+})();
+</script>
 </body>
 </html>
